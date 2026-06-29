@@ -8,6 +8,7 @@ export default function SharedViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [playError, setPlayError] = useState(false);
+  const [playErrorMsg, setPlayErrorMsg] = useState('');
 
   useEffect(() => {
     fetch(`/api/media/share/${token}`)
@@ -46,9 +47,9 @@ export default function SharedViewer() {
               </a>
             </div>
           ) : (
-            <video controls autoPlay className="video-player"
+            <video controls autoPlay playsInline className="video-player"
               poster={`/api/media/shared/thumbnail/${token}`}
-              onError={() => setPlayError(true)}>
+              onError={(e) => { setPlayError(true); setPlayErrorMsg(e.target.error?.message || 'Playback error'); }}>
               <source src={`/api/media/shared/stream/${token}`} type={media.mime_type || 'video/mp4'} />
             </video>
           )}

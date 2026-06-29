@@ -81,7 +81,9 @@ export default function VideoPlayer() {
     const video = videoRef.current;
     if (!video) return;
     setPlayError(true);
-    setError('Video playback error');
+    const code = video.error?.code || 0;
+    const codes = { 1: 'aborted', 2: 'network error', 3: 'decode error', 4: 'format not supported' };
+    setError(`Video playback error (${codes[code] || code})`);
   };
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -115,16 +117,16 @@ export default function VideoPlayer() {
           <div className="video-error">
             <FiFilm size={48} />
             <h3>Playback Error</h3>
-            <p>The video could not be played.</p>
+            <p>{error}</p>
             <a href={mediaUrl('stream', id)} className="btn-primary" download>Download Video</a>
           </div>
         ) : (
-          <video ref={videoRef} controls autoPlay className="video-player"
+          <video ref={videoRef} controls autoPlay playsInline className="video-player"
             poster={mediaUrl('thumbnail', id)}
             onError={handleVideoError}
             onPause={saveProgress}
           >
-            <source src={mediaUrl('stream', id)} type="video/mp4" />
+            <source src={mediaUrl('stream', id)} type={media?.mime_type || 'video/mp4'} />
           </video>
         )}
       </div>
