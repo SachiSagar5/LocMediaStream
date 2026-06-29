@@ -887,6 +887,32 @@ a:hover { color: var(--accent-hover); }
   overflow: visible !important;
 }
 
+.video-player-page.is-fullscreen .video-player-nav,
+.video-player-page.is-fullscreen .video-blur-bg,
+.video-player-page.is-fullscreen .video-blur-bg-inner {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.video-player-page.is-fullscreen .video-player-main {
+  padding: 0;
+}
+
+.video-player-page.is-fullscreen .video-player-wrapper {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.video-player-page.is-fullscreen .video-player-inner {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.video-player-page.is-fullscreen .video-player-inner .plyr {
+  border-radius: 0;
+}
+
 .video-nav-overlay {
   position: absolute;
   top: 0;

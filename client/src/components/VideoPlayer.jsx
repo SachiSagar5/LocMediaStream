@@ -25,6 +25,7 @@ export default function VideoPlayer() {
   const [aspectRatio, setAspectRatio] = useState('contain');
   const [audioTracks, setAudioTracks] = useState([]);
   const [activeAudioTrack, setActiveAudioTrack] = useState(-1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const videoRef = useRef(null);
   const plyrRef = useRef(null);
   const saveInterval = useRef(null);
@@ -88,6 +89,11 @@ export default function VideoPlayer() {
     });
 
     plyrRef.current = player;
+
+    const onEnterFS = () => setIsFullscreen(true);
+    const onExitFS = () => setIsFullscreen(false);
+    player.on('enterfullscreen', onEnterFS);
+    player.on('exitfullscreen', onExitFS);
 
     const seekProgress = () => {
       api.get(`/media/progress/${media.id}`)
@@ -179,7 +185,7 @@ export default function VideoPlayer() {
   const videoSrc = mediaUrl('stream', id);
 
   return (
-    <div className="video-player-page">
+    <div className={`video-player-page${isFullscreen ? ' is-fullscreen' : ''}`}>
       <div className="video-blur-bg" style={{ backgroundImage: `url(${poster})` }} />
       <div className="video-player-nav">
         <Link to="/" className="btn-icon"><FiArrowLeft size={22} /></Link>
