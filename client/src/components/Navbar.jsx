@@ -20,6 +20,11 @@ export default function Navbar() {
   const [serverURL, setServerURL] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
   const refreshServerURL = () => {
     fetch('/api/server/info')
       .then(r => r.json())

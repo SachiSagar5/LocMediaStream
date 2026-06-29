@@ -1389,6 +1389,8 @@ a:hover { color: var(--accent-hover); }
   display: flex;
   justify-content: flex-end;
   animation: fadeIn 0.2s ease;
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes fadeIn {
@@ -1411,6 +1413,8 @@ a:hover { color: var(--accent-hover); }
   padding: 20px 16px;
   box-shadow: -4px 0 24px rgba(0,0,0,0.4);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   animation: slideIn 0.25s ease;
 }
 
@@ -1430,6 +1434,10 @@ a:hover { color: var(--accent-hover); }
 .mobile-menu-search .tv-search {
   width: 100% !important;
   max-width: 100% !important;
+}
+
+.mobile-menu-search .tv-search input {
+  font-size: 16px;
 }
 
 .mobile-menu-nav {
