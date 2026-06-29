@@ -86,7 +86,7 @@ export default function VideoPlayer() {
       volume: 0.5,
       muted: true,
       storage: { enabled: false },
-      fullscreen: { enabled: true, fallback: false, iosNative: true, container: pageRef.current }
+      fullscreen: { enabled: true, fallback: false, iosNative: true, container: '.video-player-page' }
     });
 
     plyrRef.current = player;
