@@ -16,7 +16,7 @@ import { generateVideoThumbnail, getCachedThumbnail } from '../thumbnails.js';
 const router = Router();
 
 router.get('/directories', authenticateToken, (req, res) => {
-  const dirs = getMediaDirs();
+  const dirs = getMediaDirs(req.userId);
   res.json({ directories: dirs });
 });
 
@@ -25,7 +25,7 @@ router.get('/browse', authenticateToken, (req, res) => {
   const resolved = path.resolve(reqPath);
   const home = process.platform === 'win32' ? 'C:\\' : require('os').homedir();
   const root = process.platform === 'win32' ? 'C:\\' : '/';
-  const allowed = [root, home, ...getMediaDirs()].map(d => path.resolve(d));
+  const allowed = [root, home, ...getMediaDirs(req.userId)].map(d => path.resolve(d));
   const isAllowed = allowed.some(a => resolved.startsWith(a));
   if (!isAllowed && !reqPath.startsWith('/Volumes') && !reqPath.startsWith('/media')) {
     return res.status(403).json({ error: 'Access denied' });
@@ -47,14 +47,14 @@ router.post('/directories', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'directories must be an array' });
   }
   const valid = directories.filter(d => typeof d === 'string' && d.trim());
-  setMediaDirs(valid.map(d => path.resolve(d.trim())));
-  res.json({ directories: getMediaDirs() });
+  setMediaDirs(req.userId, valid.map(d => path.resolve(d.trim())));
+  res.json({ directories: getMediaDirs(req.userId) });
 });
 
 router.post('/scan', authenticateToken, (req, res) => {
   if (isScanning()) return res.status(409).json({ error: 'Scan already in progress' });
 
-  const dirs = getMediaDirs();
+  const dirs = getMediaDirs(req.userId);
   if (!dirs.length) return res.status(400).json({ error: 'No media directories configured' });
 
   const result = scanMediaLibrary(req.userId);

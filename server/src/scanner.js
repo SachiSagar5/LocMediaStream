@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import mime from 'mime-types';
-import { getMediaDirs, upsertMedia, getAllMediaPaths, removeMediaByPaths, MEDIA_EXTENSIONS } from './db/database.js';
+import { getMediaDirs, upsertMedia, getMediaByUser, removeMediaByUserAndPaths, MEDIA_EXTENSIONS } from './db/database.js';
 
 let scanning = false;
 let scanProgress = { status: 'idle', total: 0, scanned: 0, added: 0, removed: 0, errors: 0 };
@@ -50,7 +50,7 @@ function walkDir(dir, userId, stats) {
 export function scanMediaLibrary(userId) {
   if (scanning) return { error: 'Scan already in progress' };
 
-  const dirs = getMediaDirs();
+  const dirs = getMediaDirs(userId);
   if (!dirs.length) return { error: 'No media directories configured' };
 
   scanning = true;
@@ -98,10 +98,10 @@ export function scanMediaLibrary(userId) {
       }
     }
 
-    const existing = getAllMediaPaths().filter(m => m.user_id === userId).map(m => m.path);
+    const existing = getMediaByUser(userId).map(m => m.path);
     const toRemove = existing.filter(p => !scannedPaths.has(p));
     if (toRemove.length > 0) {
-      removeMediaByPaths(toRemove);
+      removeMediaByUserAndPaths(userId, toRemove);
       scanProgress.removed = toRemove.length;
     }
 

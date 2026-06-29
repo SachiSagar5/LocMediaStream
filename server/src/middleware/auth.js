@@ -10,8 +10,7 @@ export function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1] || req.query.token;
   if (!token) {
-    req.userId = 1;
-    return next();
+    return res.status(401).json({ error: 'Authentication required' });
   }
 
   try {
@@ -19,7 +18,6 @@ export function authenticateToken(req, res, next) {
     req.userId = decoded.userId;
     next();
   } catch {
-    req.userId = 1;
-    next();
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }

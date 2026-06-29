@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 
 import authRoutes from './routes/auth.js';
 import mediaRoutes from './routes/media.js';
-import { getMediaDirs, getSetting, setMediaDirs, db, createUser, getUserByUsername } from './db/database.js';
+import { getMediaDirs, db } from './db/database.js';
 import { getCerts } from './setup-certs.js';
 import { startTunnel, stopTunnel, getTunnelUrl } from './tunnel.js';
 
@@ -62,11 +62,6 @@ function getLocalIPs() {
   return ips;
 }
 
-if (!getUserByUsername('guest')) {
-  createUser('guest', 'guest@local', 'guest');
-  console.log('  Created default guest user (login disabled)');
-}
-
 function printURLs(protocol, port) {
   const ips = getLocalIPs();
   console.log(`  ${protocol === 'https' ? 'Secure' : 'Local'}:   ${protocol}://localhost:${port}`);
@@ -92,22 +87,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  DB:      ${dbName} (${dbSize})`);
   console.log();
 
-  const envDirs = process.env.MEDIA_DIRS;
-  const savedDirs = getMediaDirs();
-
-  if (envDirs && !savedDirs.length) {
-    const dirs = envDirs.split(',').map(d => d.trim()).filter(Boolean);
-    if (dirs.length) {
-      setMediaDirs(dirs);
-      console.log(`  Using MEDIA_DIRS: ${dirs.join(', ')}`);
-    }
-  }
-
-  const dirs = getMediaDirs();
-  if (dirs.length) {
-    console.log(`  Media dirs: ${dirs.join(', ')}`);
-  } else {
-    console.log('  No media directories configured. Use Settings or set MEDIA_DIRS env.');
-  }
+  console.log('  No media directories configured. Use Settings to add them.');
   console.log();
 });

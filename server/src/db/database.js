@@ -21,13 +21,14 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
+    directories TEXT DEFAULT '[]',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS media_library (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    path TEXT UNIQUE NOT NULL,
+    path TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL CHECK(type IN ('video', 'image')),
     mime_type TEXT,
@@ -75,6 +76,37 @@ db.exec(`
   );
 `);
 
+// Migrate: add directories column to users if missing, fix media_library constraint
+try { db.exec(`ALTER TABLE users ADD COLUMN directories TEXT DEFAULT '[]'`); } catch {}
+try {
+  // Media library still has UNIQUE on path — drop old table migration pattern
+  const tableInfo = db.prepare(`PRAGMA table_info(media_library)`).all();
+  const hasUniquePath = tableInfo.some(c => c.pk === 0 && c.dflt_value === null);
+  // Check if UNIQUE constraint exists on path only (not composite)
+  const indexes = db.prepare(`SELECT * FROM sqlite_master WHERE type = 'index' AND tbl_name = 'media_library'`).all();
+  const hasOldConstraint = indexes.some(i => i.sql && i.sql.includes('UNIQUE') && !i.sql.includes('user_id'));
+  if (hasOldConstraint) {
+    db.exec(`
+      CREATE TABLE media_library_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        path TEXT NOT NULL,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('video', 'image')),
+        mime_type TEXT,
+        size INTEGER,
+        file_modified_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE(user_id, path)
+      );
+      INSERT INTO media_library_new SELECT * FROM media_library;
+      DROP TABLE media_library;
+      ALTER TABLE media_library_new RENAME TO media_library;
+    `);
+  }
+} catch (e) { console.error('Migration error:', e.message); }
+
 const MEDIA_EXTENSIONS = new Set([
   '.mp4', '.webm', '.mkv', '.mov', '.avi', '.wmv', '.m4v', '.mpeg', '.mpg',
   '.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.tif', '.svg', '.heic', '.heif'
@@ -112,32 +144,27 @@ export function setSetting(key, value) {
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value);
 }
 
-export function getMediaDirs() {
-  const val = getSetting('media_dirs');
-  if (!val) return [];
-  try { return JSON.parse(val); } catch { return []; }
+export function getMediaDirs(userId) {
+  const user = db.prepare('SELECT directories FROM users WHERE id = ?').get(userId);
+  if (!user || !user.directories) return [];
+  try { return JSON.parse(user.directories); } catch { return []; }
 }
 
-export function setMediaDirs(dirs) {
-  setSetting('media_dirs', JSON.stringify(dirs));
+export function setMediaDirs(userId, dirs) {
+  db.prepare('UPDATE users SET directories = ? WHERE id = ?').run(JSON.stringify(dirs), userId);
 }
 
-export function getMediaByPath(filePath) {
-  return db.prepare('SELECT * FROM media_library WHERE path = ?').get(filePath);
-}
-
-export function getAllMediaPaths() {
-  const rows = db.prepare('SELECT path, user_id FROM media_library').all();
-  return rows;
+export function getMediaByUserAndPath(userId, filePath) {
+  return db.prepare('SELECT * FROM media_library WHERE user_id = ? AND path = ?').get(userId, filePath);
 }
 
 export function upsertMedia(userId, media) {
-  const existing = getMediaByPath(media.path);
+  const existing = getMediaByUserAndPath(userId, media.path);
   if (existing) {
     db.prepare(`
       UPDATE media_library SET name=?, type=?, mime_type=?, size=?, file_modified_at=?
-      WHERE path = ?
-    `).run(media.name, media.type, media.mime_type, media.size, media.file_modified_at, media.path);
+      WHERE user_id = ? AND path = ?
+    `).run(media.name, media.type, media.mime_type, media.size, media.file_modified_at, userId, media.path);
     return existing.id;
   } else {
     const stmt = db.prepare(`
@@ -148,10 +175,10 @@ export function upsertMedia(userId, media) {
   }
 }
 
-export function removeMediaByPaths(paths) {
+export function removeMediaByUserAndPaths(userId, paths) {
   if (paths.length === 0) return;
   const placeholders = paths.map(() => '?').join(',');
-  db.prepare(`DELETE FROM media_library WHERE path IN (${placeholders})`).run(...paths);
+  db.prepare(`DELETE FROM media_library WHERE user_id = ? AND path IN (${placeholders})`).run(userId, ...paths);
 }
 
 export function getMediaByUser(userId, type = null) {

@@ -10,35 +10,13 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let token = localStorage.getItem('token');
-    const tryAuth = async (tok) => {
-      api.defaults.headers.common['Authorization'] = `Bearer ${tok}`;
-      try {
-        const res = await api.get('/auth/me');
-        setUser(res.data);
-        localStorage.setItem('token', tok);
-        return true;
-      } catch {
-        return false;
-      }
-    };
-
-    (async () => {
-      if (token) {
-        const ok = await tryAuth(token);
-        if (ok) { setLoading(false); return; }
-      }
-      try {
-        const res = await api.post('/auth/login', { username: 'guest', password: 'guest' });
-        const t = res.data.token;
-        localStorage.setItem('token', t);
-        api.defaults.headers.common['Authorization'] = `Bearer ${t}`;
-        setUser(res.data.user);
-      } catch {
-        localStorage.removeItem('token');
-      }
-      setLoading(false);
-    })();
+    const token = localStorage.getItem('token');
+    if (!token) { setLoading(false); return; }
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    api.get('/auth/me')
+      .then(res => { setUser(res.data); })
+      .catch(() => { localStorage.removeItem('token'); })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (username, password, email) => {
