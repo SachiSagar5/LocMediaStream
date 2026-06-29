@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiArrowLeft, FiHeart, FiDownload, FiFilm, FiShare2, FiPlay, FiPause } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiDownload, FiFilm, FiShare2, FiPlay, FiPause, FiMaximize, FiMinimize } from 'react-icons/fi';
 import ShareModal from './ShareModal';
 
 function mediaUrl(path, id) {
@@ -30,11 +30,13 @@ export default function VideoPlayer() {
   const [hoverTime, setHoverTime] = useState(null);
   const [hoverX, setHoverX] = useState(0);
   const [thumbnail, setThumbnail] = useState(null);
+  const [fullscreen, setFullscreen] = useState(false);
   const videoRef = useRef(null);
   const saveInterval = useRef(null);
   const canvasRef = useRef(null);
   const progressRef = useRef(null);
   const thumbCache = useRef(new Map());
+  const wrapperRef = useRef(null);
 
   const generateThumbnail = useCallback((time) => {
     const video = videoRef.current;
@@ -94,6 +96,22 @@ export default function VideoPlayer() {
     if (!video) return;
     if (video.paused) video.play();
     else video.pause();
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      el.requestFullscreen();
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
   const saveProgress = useCallback(() => {
@@ -210,7 +228,7 @@ export default function VideoPlayer() {
         ) : (
           <div className="video-player-wrapper">
             <div className="video-blur-bg-inner" style={{ backgroundImage: `url(${poster})` }} />
-            <div className="video-player-inner">
+            <div className="video-player-inner" ref={wrapperRef}>
               <video ref={videoRef}
                 className="video-player"
                 poster={poster}
@@ -223,28 +241,37 @@ export default function VideoPlayer() {
                 onClick={togglePlay}
               />
               <div className="video-controls-overlay">
-                <div className="video-controls-left">
-                  <button className="video-ctrl-btn" onClick={togglePlay} title={playing ? 'Pause' : 'Play'}>
-                    {playing ? <FiPause size={18} /> : <FiPlay size={18} />}
-                  </button>
-                  <span className="video-time">{formatTime(currentTime)}</span>
-                  <span className="video-time-sep">/</span>
-                  <span className="video-time">{formatTime(duration)}</span>
-                </div>
-                <div className="video-progress-wrap" ref={progressRef}
-                  onMouseMove={handleProgressHover}
-                  onMouseLeave={handleProgressLeave}
-                  onClick={handleProgressClick}>
-                  <div className="video-progress-track">
-                    <div className="video-progress-fill" style={{ width: `${progress}%` }} />
-                    <div className="video-progress-thumb" style={{ left: `${progress}%` }} />
-                  </div>
-                  {hoverTime != null && (
-                    <div className="video-thumb-preview" style={{ left: `${hoverX}px` }}>
-                      <canvas ref={canvasRef} className="video-thumb-canvas" />
-                      <span className="video-thumb-time">{formatTime(hoverTime)}</span>
+                <div className="video-controls-top">
+                  <div className="video-progress-wrap" ref={progressRef}
+                    onMouseMove={handleProgressHover}
+                    onMouseLeave={handleProgressLeave}
+                    onClick={handleProgressClick}>
+                    <div className="video-progress-track">
+                      <div className="video-progress-fill" style={{ width: `${progress}%` }} />
+                      <div className="video-progress-thumb" style={{ left: `${progress}%` }} />
                     </div>
-                  )}
+                    {hoverTime != null && (
+                      <div className="video-thumb-preview" style={{ left: `${hoverX}px` }}>
+                        <canvas ref={canvasRef} className="video-thumb-canvas" />
+                        <span className="video-thumb-time">{formatTime(hoverTime)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="video-controls-bottom">
+                  <div className="video-controls-left">
+                    <button className="video-ctrl-btn" onClick={togglePlay} title={playing ? 'Pause' : 'Play'}>
+                      {playing ? <FiPause size={18} /> : <FiPlay size={18} />}
+                    </button>
+                    <span className="video-time">{formatTime(currentTime)}</span>
+                    <span className="video-time-sep">/</span>
+                    <span className="video-time">{formatTime(duration)}</span>
+                  </div>
+                  <div className="video-controls-right">
+                    <button className="video-ctrl-btn" onClick={toggleFullscreen} title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+                      {fullscreen ? <FiMinimize size={16} /> : <FiMaximize size={16} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
