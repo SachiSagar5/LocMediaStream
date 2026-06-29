@@ -83,7 +83,11 @@ export default function SettingsModal({ onClose }) {
     setScanning(true);
     setScanStatus(null);
     try {
-      await api.post('/media/directories', { directories });
+      const dir = newDir.trim();
+      const dirsToSave = dir && !directories.includes(dir) ? [...directories, dir] : directories;
+      setDirectories(dirsToSave);
+      setNewDir('');
+      await api.post('/media/directories', { directories: dirsToSave });
       const res = await api.post('/media/scan');
       setScanStatus(res.data);
       if (res.data.success) {

@@ -48,7 +48,7 @@ router.post('/directories', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'directories must be an array' });
   }
   const valid = directories.filter(d => typeof d === 'string' && d.trim());
-  setMediaDirs(req.userId, valid.map(d => path.resolve(d.trim())));
+  setMediaDirs(req.userId, valid.map(d => path.resolve(d.trim().replace(/^['"]|['"]$/g, ''))));
   res.json({ directories: getMediaDirs(req.userId) });
 });
 

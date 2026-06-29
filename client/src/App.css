@@ -1055,6 +1055,29 @@ a:hover { color: var(--accent-hover); }
   padding: 24px;
 }
 
+.player-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px 12px;
+}
+
+.player-nav h2 {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .photo-container {
   display: flex;
   align-items: center;

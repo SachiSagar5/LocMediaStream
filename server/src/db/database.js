@@ -79,13 +79,9 @@ db.exec(`
 // Migrate: add directories column to users if missing, fix media_library constraint
 try { db.exec(`ALTER TABLE users ADD COLUMN directories TEXT DEFAULT '[]'`); } catch {}
 try {
-  // Media library still has UNIQUE on path — drop old table migration pattern
-  const tableInfo = db.prepare(`PRAGMA table_info(media_library)`).all();
-  const hasUniquePath = tableInfo.some(c => c.pk === 0 && c.dflt_value === null);
-  // Check if UNIQUE constraint exists on path only (not composite)
-  const indexes = db.prepare(`SELECT * FROM sqlite_master WHERE type = 'index' AND tbl_name = 'media_library'`).all();
-  const hasOldConstraint = indexes.some(i => i.sql && i.sql.includes('UNIQUE') && !i.sql.includes('user_id'));
-  if (hasOldConstraint) {
+  // Fix: UNIQUE(path) -> UNIQUE(user_id, path)
+  const schema = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='media_library'`).get();
+  if (schema && schema.sql && !schema.sql.includes('UNIQUE(user_id, path)')) {
     db.exec(`
       CREATE TABLE media_library_new (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,7 +96,7 @@ try {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         UNIQUE(user_id, path)
       );
-      INSERT INTO media_library_new SELECT * FROM media_library;
+      INSERT OR IGNORE INTO media_library_new SELECT * FROM media_library;
       DROP TABLE media_library;
       ALTER TABLE media_library_new RENAME TO media_library;
     `);
