@@ -77,13 +77,13 @@ export default function VideoPlayer() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [saveProgress]);
 
-  const handleVideoError = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    setPlayError(true);
-    const code = video.error?.code || 0;
+  const handleVideoError = (e) => {
+    const el = e?.target || videoRef.current;
+    const error = el?.error;
+    const code = error?.code || 0;
     const codes = { 1: 'aborted', 2: 'network error', 3: 'decode error', 4: 'format not supported' };
     setError(`Video playback error (${codes[code] || code})`);
+    setPlayError(true);
   };
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -121,13 +121,12 @@ export default function VideoPlayer() {
             <a href={mediaUrl('stream', id)} className="btn-primary" download>Download Video</a>
           </div>
         ) : (
-          <video ref={videoRef} controls autoPlay playsInline className="video-player"
+          <video ref={videoRef} controls autoPlay playsInline muted className="video-player"
             poster={mediaUrl('thumbnail', id)}
+            src={mediaUrl('stream', id)}
             onError={handleVideoError}
             onPause={saveProgress}
-          >
-            <source src={mediaUrl('stream', id)} type={media?.mime_type || 'video/mp4'} />
-          </video>
+          />
         )}
       </div>
       {showShare && <ShareModal mediaId={media?.id} mediaName={media?.name}
