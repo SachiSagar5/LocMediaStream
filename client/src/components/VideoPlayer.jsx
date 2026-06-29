@@ -2,8 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiArrowLeft, FiHeart, FiDownload, FiFilm, FiShare2, FiSkipBack, FiSkipForward, FiMaximize2, FiMinimize2, FiRadio } from 'react-icons/fi';
-import Plyr from 'plyr';
-import 'plyr/dist/plyr.css';
 import ShareModal from './ShareModal';
 
 function mediaUrl(path, id) {
@@ -26,8 +24,11 @@ export default function VideoPlayer() {
   const [audioTracks, setAudioTracks] = useState([]);
   const [activeAudioTrack, setActiveAudioTrack] = useState(-1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const videoRef = useRef(null);
-  const plyrRef = useRef(null);
   const saveInterval = useRef(null);
   const pageRef = useRef(null);
 
@@ -40,12 +41,12 @@ export default function VideoPlayer() {
   const goPrev = useCallback(() => goToVideo(currentIndex - 1), [goToVideo, currentIndex]);
 
   const saveProgress = useCallback(() => {
-    const player = plyrRef.current;
-    if (!player || !media) return;
+    const el = videoRef.current;
+    if (!el || !media) return;
     try {
       api.post(`/media/progress/${media.id}`, {
-        position: player.currentTime,
-        duration: player.duration || 0
+        position: el.currentTime,
+        duration: el.duration || 0
       });
     } catch {}
   }, [api, media]);
@@ -68,35 +69,16 @@ export default function VideoPlayer() {
   }, [id, api]);
 
   useEffect(() => {
-    if (!media || !videoRef.current) return;
+    if (!media) return;
     const el = videoRef.current;
-    if (plyrRef.current) { plyrRef.current.destroy(); }
-
-    const player = new Plyr(el, {
-      controls: [
-        'play-large', 'play', 'progress', 'current-time', 'duration',
-        'mute', 'volume', 'settings', 'pip', 'airplay', 'fullscreen'
-      ],
-      settings: ['speed'],
-      clickToPlay: true,
-      hideControls: true,
-      keyboard: { focused: true, global: false },
-      tooltips: { controls: true, seek: true },
-      seekTime: 10,
-      volume: 0.5,
-      muted: true,
-      storage: { enabled: false },
-      fullscreen: { enabled: true, fallback: false, iosNative: true, container: '.video-player-page' }
-    });
-
-    plyrRef.current = player;
+    if (!el) return;
 
     const seekProgress = () => {
       api.get(`/media/progress/${media.id}`)
         .then(res => {
           if (res.data.position > 5) {
             el.addEventListener('canplay', () => {
-              player.currentTime = res.data.position;
+              el.currentTime = res.data.position;
             }, { once: true });
           }
         })
@@ -110,6 +92,7 @@ export default function VideoPlayer() {
     }
 
     el.addEventListener('loadedmetadata', () => {
+      setDuration(el.duration);
       const tracks = el.audioTracks;
       if (tracks && tracks.length > 0) {
         const list = [];
@@ -121,8 +104,6 @@ export default function VideoPlayer() {
         setAudioTracks(list);
       }
     }, { once: true });
-
-    return () => { player.destroy(); plyrRef.current = null; };
   }, [media]);
 
   useEffect(() => {
@@ -168,9 +149,31 @@ export default function VideoPlayer() {
     setActiveAudioTrack(next);
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      pageRef.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const changeSpeed = (speed) => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+      setPlaybackSpeed(speed);
+    }
+  };
+
   const handleVideoError = () => {
     setError('Video playback error');
     setPlayError(true);
+  };
+
+  const formatTime = (s) => {
+    if (!s || !isFinite(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -228,26 +231,44 @@ export default function VideoPlayer() {
         ) : (
           <div className="video-player-wrapper">
             <div className="video-blur-bg-inner" style={{ backgroundImage: `url(${poster})` }} />
-            <div className="video-player-inner plyr-container">
+            <div className="video-player-inner">
               <video ref={videoRef}
                 className={`video-player video-ratio-${aspectRatio}`}
                 poster={poster}
                 onError={handleVideoError}
+                onTimeUpdate={() => { setCurrentTime(videoRef.current?.currentTime || 0); }}
+                onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => { if (currentIndex < videos.length - 1) goNext(); }}
                 playsInline
                 autoPlay
+                controls
               >
                 <source src={videoSrc} type={media?.mime_type || 'video/mp4'} />
               </video>
-              <button className="video-nav-overlay video-nav-prev"
-                onClick={goPrev} disabled={currentIndex <= 0}
-                title="Previous (←)" aria-label="Previous video">
-                <FiSkipBack size={28} />
-              </button>
-              <button className="video-nav-overlay video-nav-next"
-                onClick={goNext} disabled={currentIndex >= videos.length - 1}
-                title="Next (→)" aria-label="Next video">
-                <FiSkipForward size={28} />
-              </button>
+
+              <div className="video-controls-bar">
+                <div className="vc-left">
+                  <button className="vc-btn" onClick={() => videoRef.current?.play()}>▶</button>
+                  <button className="vc-btn" onClick={() => videoRef.current?.pause()}>⏸</button>
+                  <span className="vc-time">{formatTime(currentTime)} / {formatTime(duration)}</span>
+                </div>
+                <div className="vc-center">
+                  {[1, 1.5, 2].map(s => (
+                    <button key={s}
+                      className={`vc-speed${playbackSpeed === s ? ' active' : ''}`}
+                      onClick={() => changeSpeed(s)}>
+                      {s}x
+                    </button>
+                  ))}
+                </div>
+                <div className="vc-right">
+                  <button className="vc-btn" onClick={toggleFullscreen} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+                    {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

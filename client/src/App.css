@@ -860,31 +860,84 @@ a:hover { color: var(--accent-hover); }
   background: #000;
 }
 
-.video-player-inner .plyr {
-  border-radius: 12px;
-  overflow: hidden;
+.video-controls-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 5;
+  gap: 8px;
 }
 
-.video-player-inner.plyr-container {
-  border-radius: 12px;
+.video-player-inner:hover .video-controls-bar {
+  opacity: 1;
 }
 
-.video-player-inner.plyr-container .plyr {
-  border-radius: 12px;
+.vc-left,
+.vc-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.video-player-inner .plyr--fullscreen-enabled {
-  border-radius: 0;
+.vc-center {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.video-player-inner .plyr--fullscreen-active .video-nav-overlay {
-  display: none;
+.vc-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
 }
 
-.plyr--fullscreen-active,
-.plyr--fullscreen-active .plyr__video-wrapper {
-  border-radius: 0 !important;
-  overflow: visible !important;
+.vc-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.vc-time {
+  font-size: 0.75rem;
+  color: #ccc;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.vc-speed {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.vc-speed:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+.vc-speed.active {
+  background: #e50914;
+  border-color: #e50914;
+  color: #fff;
 }
 
 .video-player-page.is-fullscreen .video-player-nav,
@@ -909,8 +962,8 @@ a:hover { color: var(--accent-hover); }
   box-shadow: none;
 }
 
-.video-player-page.is-fullscreen .video-player-inner .plyr {
-  border-radius: 0;
+.video-player-page.is-fullscreen .video-controls-bar {
+  display: none;
 }
 
 .video-nav-overlay {
