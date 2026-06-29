@@ -31,60 +31,11 @@ export default function VideoPlayer() {
   const [muted, setMuted] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [hoverTime, setHoverTime] = useState(null);
-  const [hoverX, setHoverX] = useState(0);
-  const [thumbnail, setThumbnail] = useState(null);
   const [fullscreen, setFullscreen] = useState(false);
   const videoRef = useRef(null);
   const saveInterval = useRef(null);
-  const canvasRef = useRef(null);
   const progressRef = useRef(null);
-  const thumbCache = useRef(new Map());
   const wrapperRef = useRef(null);
-
-  const generateThumbnail = useCallback((time) => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas || !video.videoWidth) return;
-    const cached = thumbCache.current.get(Math.floor(time));
-    if (cached) { setThumbnail(cached); return; }
-    try {
-      canvas.width = 160;
-      canvas.height = 90;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-      thumbCache.current.set(Math.floor(time), dataUrl);
-      if (thumbCache.current.size > 200) {
-        const first = thumbCache.current.keys().next().value;
-        thumbCache.current.delete(first);
-      }
-      setThumbnail(dataUrl);
-    } catch {}
-  }, []);
-
-  const captureThumbnail = useCallback((time) => {
-    const video = videoRef.current;
-    if (!video || !video.videoWidth) return;
-    video.currentTime = time;
-    generateThumbnail(time);
-  }, [generateThumbnail]);
-
-  const handleProgressHover = useCallback((e) => {
-    const rect = progressRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left;
-    const pct = Math.max(0, Math.min(1, x / rect.width));
-    const time = pct * duration;
-    setHoverX(x);
-    setHoverTime(time);
-    captureThumbnail(time);
-  }, [duration, captureThumbnail]);
-
-  const handleProgressLeave = useCallback(() => {
-    setHoverTime(null);
-    setThumbnail(null);
-  }, []);
 
   const handleProgressClick = useCallback((e) => {
     const video = videoRef.current;
@@ -268,17 +219,10 @@ export default function VideoPlayer() {
                 onClick={togglePlay}
               />
               <div className="video-controls-overlay">
-                <div className="video-progress-wrap" ref={progressRef}
-                  onMouseMove={handleProgressHover}
-                  onMouseLeave={handleProgressLeave}
-                  onClick={handleProgressClick}>
+                <div className="video-progress-wrap" ref={progressRef} onClick={handleProgressClick}>
                   <div className="video-progress-track">
                     <div className="video-progress-fill" style={{ width: `${progress}%` }} />
                     <div className="video-progress-thumb" style={{ left: `${progress}%` }} />
-                  </div>
-                  <div className={`video-thumb-preview${hoverTime != null ? ' visible' : ''}`} style={{ left: `${hoverX}px` }}>
-                    <canvas ref={canvasRef} className="video-thumb-canvas" />
-                    <span className="video-thumb-time">{formatTime(hoverTime || 0)}</span>
                   </div>
                 </div>
                 <div className="video-controls-bottom">
