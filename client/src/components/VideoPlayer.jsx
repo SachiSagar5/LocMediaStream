@@ -46,8 +46,10 @@ export default function VideoPlayer() {
   }, [api, media]);
 
   useEffect(() => {
+    let cancelled = false;
     api.get('/media/library')
       .then(res => {
+        if (cancelled) return;
         const all = res.data.filter(m => m.type === 'video');
         setVideos(all);
         const idx = all.findIndex(m => m.id === parseInt(id));
@@ -55,14 +57,15 @@ export default function VideoPlayer() {
         setCurrentIndex(idx);
         setMedia(all[idx]);
       })
-      .catch(() => setError('Failed to load media'))
-      .finally(() => setLoading(false));
+      .catch(() => { if (!cancelled) setError('Failed to load media'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [id, api]);
 
   useEffect(() => {
-    if (!media) { setLoading(false); return; }
+    if (!media || !videoRef.current) return;
     const el = videoRef.current;
-    if (!el) return;
+    if (plyrRef.current) { plyrRef.current.destroy(); }
 
     const player = new Plyr(el, {
       controls: [
@@ -139,7 +142,7 @@ export default function VideoPlayer() {
         <button className="btn-icon" onClick={goNext} disabled={currentIndex >= videos.length - 1} title="Next">
           <FiSkipForward size={18} />
         </button>
-        <h2>{media?.name}</h2>
+        <h2>{media?.name || 'Video'}</h2>
         <span className="video-counter">{currentIndex + 1}/{videos.length}</span>
         <button className="btn-icon" onClick={async () => {
           try { await api.post(`/media/favorites/${id}`); } catch { }
@@ -168,6 +171,7 @@ export default function VideoPlayer() {
                 poster={poster}
                 onError={handleVideoError}
                 playsInline
+                autoPlay
               >
                 <source src={videoSrc} type={media?.mime_type || 'video/mp4'} />
               </video>
