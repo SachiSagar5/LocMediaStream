@@ -45,12 +45,10 @@ export default function SettingsModal({ onClose }) {
   const loadBrowse = async (dirPath) => {
     setBrowseLoading(true);
     try {
-      const res = await fetch(`/api/media/browse?path=${encodeURIComponent(dirPath)}`);
-      if (!res.ok) throw new Error('Failed to load');
-      const data = await res.json();
-      setBrowsePath(data.path);
-      setBrowseDirs(data.directories);
-      setBrowseParent(data.parent);
+      const res = await api.get(`/media/browse?path=${encodeURIComponent(dirPath)}`);
+      setBrowsePath(res.data.path);
+      setBrowseDirs(res.data.directories);
+      setBrowseParent(res.data.parent);
     } catch {
       alert('Cannot browse this directory');
     } finally {
