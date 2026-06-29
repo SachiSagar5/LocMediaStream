@@ -78,6 +78,8 @@ app.listen(PORT, '0.0.0.0', () => {
     https.createServer(certs, app).listen(HTTPS_PORT, '0.0.0.0', () => {
       console.log(`  ─────────────────────`);
       printURLs('https', HTTPS_PORT);
+    }).on('error', (err) => {
+      console.log(`  HTTPS server unavailable (${err.message})`);
     });
   }
 
