@@ -873,17 +873,13 @@ a:hover { color: var(--accent-hover); }
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
-  padding-top: 48px;
+  will-change: opacity;
 }
 
 .video-player-inner:hover .video-controls-overlay,
 .video-controls-overlay:hover {
   opacity: 1;
   pointer-events: auto;
-}
-
-.video-controls-top {
-  padding: 0 12px;
 }
 
 .video-controls-bottom {
@@ -919,6 +915,7 @@ a:hover { color: var(--accent-hover); }
   cursor: pointer;
   border-radius: 50%;
   transition: background 0.15s;
+  flex-shrink: 0;
 }
 
 .video-ctrl-btn:hover { background: rgba(255,255,255,0.15); }
@@ -929,6 +926,7 @@ a:hover { color: var(--accent-hover); }
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.2px;
   user-select: none;
+  white-space: nowrap;
 }
 
 .video-time-sep {
@@ -939,11 +937,15 @@ a:hover { color: var(--accent-hover); }
 }
 
 .video-progress-wrap {
-  position: relative;
-  height: 28px;
+  position: absolute;
+  bottom: 40px;
+  left: 12px;
+  right: 12px;
+  height: 24px;
   display: flex;
   align-items: center;
   cursor: pointer;
+  z-index: 5;
 }
 
 .video-progress-track {
@@ -952,8 +954,9 @@ a:hover { color: var(--accent-hover); }
   background: rgba(255,255,255,0.2);
   border-radius: 3px;
   position: relative;
-  transform-origin: center;
-  transition: transform 0.15s;
+  transform-origin: center left;
+  transition: transform 0.12s;
+  will-change: transform;
 }
 
 .video-progress-wrap:hover .video-progress-track {
@@ -975,7 +978,8 @@ a:hover { color: var(--accent-hover); }
   background: var(--accent);
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(0);
-  transition: transform 0.15s;
+  transition: transform 0.12s;
+  will-change: transform;
 }
 
 .video-progress-wrap:hover .video-progress-thumb {
@@ -985,7 +989,7 @@ a:hover { color: var(--accent-hover); }
 /* Thumbnail preview */
 .video-thumb-preview {
   position: absolute;
-  bottom: 32px;
+  bottom: 28px;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -993,6 +997,14 @@ a:hover { color: var(--accent-hover); }
   gap: 4px;
   pointer-events: none;
   z-index: 10;
+  opacity: 0;
+  transition: opacity 0.12s;
+  will-change: opacity, transform;
+}
+
+.video-progress-wrap:hover .video-thumb-preview,
+.video-thumb-preview.visible {
+  opacity: 1;
 }
 
 .video-thumb-canvas {
@@ -1002,6 +1014,7 @@ a:hover { color: var(--accent-hover); }
   box-shadow: 0 4px 16px rgba(0,0,0,0.6);
   background: #000;
   object-fit: cover;
+  display: block;
 }
 
 .video-thumb-time {

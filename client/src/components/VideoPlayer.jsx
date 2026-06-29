@@ -241,21 +241,17 @@ export default function VideoPlayer() {
                 onClick={togglePlay}
               />
               <div className="video-controls-overlay">
-                <div className="video-controls-top">
-                  <div className="video-progress-wrap" ref={progressRef}
-                    onMouseMove={handleProgressHover}
-                    onMouseLeave={handleProgressLeave}
-                    onClick={handleProgressClick}>
-                    <div className="video-progress-track">
-                      <div className="video-progress-fill" style={{ width: `${progress}%` }} />
-                      <div className="video-progress-thumb" style={{ left: `${progress}%` }} />
-                    </div>
-                    {hoverTime != null && (
-                      <div className="video-thumb-preview" style={{ left: `${hoverX}px` }}>
-                        <canvas ref={canvasRef} className="video-thumb-canvas" />
-                        <span className="video-thumb-time">{formatTime(hoverTime)}</span>
-                      </div>
-                    )}
+                <div className="video-progress-wrap" ref={progressRef}
+                  onMouseMove={handleProgressHover}
+                  onMouseLeave={handleProgressLeave}
+                  onClick={handleProgressClick}>
+                  <div className="video-progress-track">
+                    <div className="video-progress-fill" style={{ width: `${progress}%` }} />
+                    <div className="video-progress-thumb" style={{ left: `${progress}%` }} />
+                  </div>
+                  <div className={`video-thumb-preview${hoverTime != null ? ' visible' : ''}`} style={{ left: `${hoverX}px` }}>
+                    <canvas ref={canvasRef} className="video-thumb-canvas" />
+                    <span className="video-thumb-time">{formatTime(hoverTime || 0)}</span>
                   </div>
                 </div>
                 <div className="video-controls-bottom">
