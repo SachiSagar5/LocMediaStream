@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiArrowLeft, FiHeart, FiDownload, FiFilm, FiShare2, FiPlay, FiPause, FiMaximize, FiMinimize } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiDownload, FiFilm, FiShare2, FiPlay, FiPause, FiMaximize, FiMinimize, FiSkipBack, FiSkipForward, FiVolume2, FiVolumeX } from 'react-icons/fi';
 import ShareModal from './ShareModal';
 
 function mediaUrl(path, id) {
@@ -19,12 +19,16 @@ function formatTime(s) {
 export default function VideoPlayer() {
   const { id } = useParams();
   const { api } = useAuth();
+  const navigate = useNavigate();
   const [media, setMedia] = useState(null);
+  const [videos, setVideos] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [playError, setPlayError] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [hoverTime, setHoverTime] = useState(null);
@@ -91,6 +95,21 @@ export default function VideoPlayer() {
     video.currentTime = pct * duration;
   }, [duration]);
 
+  const goToVideo = useCallback((idx) => {
+    if (idx < 0 || idx >= videos.length) return;
+    navigate(`/watch/${videos[idx].id}`);
+  }, [videos, navigate]);
+
+  const goNext = useCallback(() => goToVideo(currentIndex + 1), [goToVideo, currentIndex]);
+  const goPrev = useCallback(() => goToVideo(currentIndex - 1), [goToVideo, currentIndex]);
+
+  const toggleMute = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setMuted(video.muted);
+  }, []);
+
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -128,10 +147,12 @@ export default function VideoPlayer() {
   useEffect(() => {
     api.get('/media/library')
       .then(res => {
-        const found = res.data.find(m => m.id === parseInt(id));
-        if (!found) { setError('Media not found'); return; }
-        if (found.type !== 'video') { setError('Not a video file'); return; }
-        setMedia(found);
+        const all = res.data.filter(m => m.type === 'video');
+        setVideos(all);
+        const idx = all.findIndex(m => m.id === parseInt(id));
+        if (idx === -1) { setError('Media not found'); return; }
+        setCurrentIndex(idx);
+        setMedia(all[idx]);
       })
       .catch(() => setError('Failed to load media'))
       .finally(() => setLoading(false));
@@ -206,6 +227,12 @@ export default function VideoPlayer() {
       <div className="video-blur-bg" style={{ backgroundImage: `url(${poster})` }} />
       <div className="video-player-nav">
         <Link to="/" className="btn-icon"><FiArrowLeft size={22} /></Link>
+        <button className="btn-icon" onClick={goPrev} disabled={currentIndex <= 0} title="Previous">
+          <FiSkipBack size={18} />
+        </button>
+        <button className="btn-icon" onClick={goNext} disabled={currentIndex >= videos.length - 1} title="Next">
+          <FiSkipForward size={18} />
+        </button>
         <h2>{media?.name}</h2>
         <button className="btn-icon" onClick={async () => {
           try { await api.post(`/media/favorites/${id}`); } catch { }
@@ -233,7 +260,7 @@ export default function VideoPlayer() {
                 className="video-player"
                 poster={poster}
                 src={videoSrc}
-                autoPlay playsInline muted
+                autoPlay playsInline muted={muted}
                 onError={handleVideoError}
                 onPause={() => { saveProgress(); setPlaying(false); }}
                 onTimeUpdate={handleTimeUpdate}
@@ -259,11 +286,21 @@ export default function VideoPlayer() {
                     <button className="video-ctrl-btn" onClick={togglePlay} title={playing ? 'Pause' : 'Play'}>
                       {playing ? <FiPause size={18} /> : <FiPlay size={18} />}
                     </button>
+                    <button className="video-ctrl-btn" onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}>
+                      {muted ? <FiVolumeX size={18} /> : <FiVolume2 size={18} />}
+                    </button>
+                    <button className="video-ctrl-btn" onClick={goPrev} disabled={currentIndex <= 0} title="Previous">
+                      <FiSkipBack size={16} />
+                    </button>
+                    <button className="video-ctrl-btn" onClick={goNext} disabled={currentIndex >= videos.length - 1} title="Next">
+                      <FiSkipForward size={16} />
+                    </button>
                     <span className="video-time">{formatTime(currentTime)}</span>
                     <span className="video-time-sep">/</span>
                     <span className="video-time">{formatTime(duration)}</span>
                   </div>
                   <div className="video-controls-right">
+                    <span className="video-time">{currentIndex + 1}/{videos.length}</span>
                     <button className="video-ctrl-btn" onClick={toggleFullscreen} title={fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
                       {fullscreen ? <FiMinimize size={16} /> : <FiMaximize size={16} />}
                     </button>
