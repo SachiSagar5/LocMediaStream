@@ -142,7 +142,7 @@ export default function Navbar() {
               <button className="btn-icon" onClick={() => setMenuOpen(false)}><FiX size={20} /></button>
             </div>
             <div className="mobile-menu-search">
-              <form className="tv-search" onSubmit={handleSearch} style={{ width: '100%' }}>
+              <form className="tv-search" onSubmit={handleSearch}>
                 <FiSearch className="tv-search-icon" />
                 <input type="text" placeholder="Search" value={search}
                   onChange={(e) => setSearch(e.target.value)} autoFocus />
