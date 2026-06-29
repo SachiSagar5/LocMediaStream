@@ -80,24 +80,29 @@ export default function VideoPlayer() {
       seekTime: 10,
       volume: 0.5,
       muted: true,
-      storage: { enabled: false }
+      storage: { enabled: false },
+      fullscreen: { enabled: true, fallback: true, iosNative: true }
     });
 
     plyrRef.current = player;
 
-    player.on('ended', () => {
-      if (currentIndex < videos.length - 1) goNext();
-    });
+    const seekProgress = () => {
+      api.get(`/media/progress/${media.id}`)
+        .then(res => {
+          if (res.data.position > 5) {
+            el.addEventListener('canplay', () => {
+              player.currentTime = res.data.position;
+            }, { once: true });
+          }
+        })
+        .catch(() => {});
+    };
 
-    api.get(`/media/progress/${media.id}`)
-      .then(res => {
-        if (res.data.position > 5) {
-          el.addEventListener('canplay', () => {
-            player.currentTime = res.data.position;
-          }, { once: true });
-        }
-      })
-      .catch(() => {});
+    if (el.readyState >= 1) {
+      el.addEventListener('loadedmetadata', seekProgress, { once: true });
+    } else {
+      seekProgress();
+    }
 
     return () => { player.destroy(); plyrRef.current = null; };
   }, [media]);
@@ -112,6 +117,15 @@ export default function VideoPlayer() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [saveProgress]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'ArrowLeft') { goPrev(); }
+      else if (e.key === 'ArrowRight') { goNext(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [goPrev, goNext]);
 
   const handleVideoError = () => {
     setError('Video playback error');
@@ -175,6 +189,16 @@ export default function VideoPlayer() {
               >
                 <source src={videoSrc} type={media?.mime_type || 'video/mp4'} />
               </video>
+              <button className="video-nav-overlay video-nav-prev"
+                onClick={goPrev} disabled={currentIndex <= 0}
+                title="Previous (←)" aria-label="Previous video">
+                <FiSkipBack size={28} />
+              </button>
+              <button className="video-nav-overlay video-nav-next"
+                onClick={goNext} disabled={currentIndex >= videos.length - 1}
+                title="Next (→)" aria-label="Next video">
+                <FiSkipForward size={28} />
+              </button>
             </div>
           </div>
         )}
