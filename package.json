@@ -1,0 +1,11 @@
+{
+  "name": "locmediastream",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "build:client": "cd client && npx vite build",
+    "build": "npm run install:all && npm run build:client",
+    "start": "node server/src/server.js"
+  }
+}
