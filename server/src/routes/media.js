@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import mime from 'mime-types';
 import { authenticateToken } from '../middleware/auth.js';
 import {
@@ -23,7 +24,7 @@ router.get('/directories', authenticateToken, (req, res) => {
 router.get('/browse', authenticateToken, (req, res) => {
   const reqPath = req.query.path || process.platform === 'win32' ? 'C:\\' : '/';
   const resolved = path.resolve(reqPath);
-  const home = process.platform === 'win32' ? 'C:\\' : require('os').homedir();
+  const home = process.platform === 'win32' ? 'C:\\' : os.homedir();
   const root = process.platform === 'win32' ? 'C:\\' : '/';
   const allowed = [root, home, ...getMediaDirs(req.userId)].map(d => path.resolve(d));
   const isAllowed = allowed.some(a => resolved.startsWith(a));
