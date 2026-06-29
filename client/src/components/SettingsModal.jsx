@@ -65,9 +65,7 @@ export default function SettingsModal({ onClose }) {
   };
 
   const selectBrowseDir = (dir) => {
-    if (dir && !directories.includes(dir)) {
-      setDirectories([...directories, dir]);
-    }
+    setNewDir(dir);
     setBrowsing(false);
   };
 
