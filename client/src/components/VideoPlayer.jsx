@@ -245,7 +245,7 @@ export default function VideoPlayer() {
                 autoPlay
                 controls
               >
-                <source src={videoSrc} type={media?.mime_type || 'video/mp4'} />
+                <source src={videoSrc} />
               </video>
 
               <div className="video-controls-bar">
