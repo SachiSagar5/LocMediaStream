@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FiX, FiPlus, FiTrash2, FiFolder, FiRefreshCw, FiMonitor, FiSettings, FiGlobe, FiSearch } from 'react-icons/fi';
+import { FiX, FiPlus, FiTrash2, FiFolder, FiRefreshCw, FiMonitor, FiSettings, FiGlobe, FiSearch, FiChevronRight, FiArrowUp } from 'react-icons/fi';
 
 export default function SettingsModal({ onClose }) {
   const { api } = useAuth();
@@ -12,7 +12,11 @@ export default function SettingsModal({ onClose }) {
   const [serverInfo, setServerInfo] = useState(null);
   const [tunnelEnabled, setTunnelEnabled] = useState(false);
   const [tunnelLoading, setTunnelLoading] = useState(false);
-  const fileInputRef = useRef(null);
+  const [browsing, setBrowsing] = useState(false);
+  const [browsePath, setBrowsePath] = useState('');
+  const [browseDirs, setBrowseDirs] = useState([]);
+  const [browseParent, setBrowseParent] = useState('');
+  const [browseLoading, setBrowseLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/server/info').then(r => r.json()).then(info => {
@@ -38,18 +42,33 @@ export default function SettingsModal({ onClose }) {
     setDirectories(directories.filter((_, i) => i !== idx));
   };
 
-  const handleBrowse = () => {
-    fileInputRef.current?.click();
+  const loadBrowse = async (dirPath) => {
+    setBrowseLoading(true);
+    try {
+      const res = await fetch(`/api/media/browse?path=${encodeURIComponent(dirPath)}`);
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      setBrowsePath(data.path);
+      setBrowseDirs(data.directories);
+      setBrowseParent(data.parent);
+    } catch {
+      alert('Cannot browse this directory');
+    } finally {
+      setBrowseLoading(false);
+    }
   };
 
-  const handleFolderPick = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const dir = file.path.substring(0, file.path.lastIndexOf('/'));
+  const openBrowser = () => {
+    const startPath = directories.length > 0 ? directories[0] : '/';
+    setBrowsing(true);
+    loadBrowse(startPath);
+  };
+
+  const selectBrowseDir = (dir) => {
     if (dir && !directories.includes(dir)) {
       setDirectories([...directories, dir]);
     }
-    e.target.value = '';
+    setBrowsing(false);
   };
 
   const saveDirectories = async () => {
@@ -166,21 +185,59 @@ export default function SettingsModal({ onClose }) {
               ))}
             </div>
 
-            <div className="dir-input-group">
-              <input
-                type="text"
-                placeholder="/path/to/your/media"
-                value={newDir}
-                onChange={(e) => setNewDir(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addDirectory()}
-              />
-              <button className="btn-primary small" onClick={addDirectory}><FiPlus /> Add</button>
-              <button className="btn-primary small secondary" onClick={handleBrowse} title="Browse folders">
-                <FiSearch /> Browse
-              </button>
-              <input ref={fileInputRef} type="file" style={{ display: 'none' }}
-                webkitdirectory="" directory="" onChange={handleFolderPick} />
-            </div>
+            {browsing ? (
+              <div className="dir-browser">
+                <div className="dir-browser-header">
+                  <span className="dir-browser-path">{browsePath}</span>
+                  <button className="btn-icon" onClick={() => setBrowsing(false)} title="Close">
+                    <FiX size={14} />
+                  </button>
+                </div>
+                <div className="dir-browser-list">
+                  {browseParent && browseParent !== browsePath && (
+                    <div className="dir-browser-item parent" onClick={() => loadBrowse(browseParent)}>
+                      <FiArrowUp size={14} /> ..
+                    </div>
+                  )}
+                  {browseLoading ? (
+                    <div className="dir-browser-loading">Loading...</div>
+                  ) : browseDirs.length === 0 ? (
+                    <div className="dir-browser-empty">No subdirectories</div>
+                  ) : (
+                    browseDirs.map(d => (
+                      <div key={d.path} className="dir-browser-item"
+                        onClick={() => loadBrowse(d.path)}>
+                        <FiFolder size={14} />
+                        <span className="dir-browser-name">{d.name}</span>
+                        <button className="btn-icon" title="Select this folder"
+                          onClick={(e) => { e.stopPropagation(); selectBrowseDir(d.path); }}>
+                          <FiPlus size={12} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="dir-browser-select">
+                  <button className="btn-primary small" onClick={() => selectBrowseDir(browsePath)}>
+                    <FiPlus /> Select Current Folder
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="dir-input-group">
+                <input
+                  type="text"
+                  placeholder="/path/to/your/media"
+                  value={newDir}
+                  onChange={(e) => setNewDir(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addDirectory()}
+                />
+                <button className="btn-primary small" onClick={addDirectory}><FiPlus /> Add</button>
+                <button className="btn-primary small secondary" onClick={openBrowser} title="Browse server folders">
+                  <FiSearch /> Browse
+                </button>
+              </div>
+            )}
 
             <div className="settings-actions">
               <button className="btn-primary small" onClick={saveDirectories} disabled={saving}>

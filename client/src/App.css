@@ -1381,7 +1381,101 @@ a:hover { color: var(--accent-hover); }
 .photo-grid-info a { color: var(--text); }
 .photo-grid-info a:hover { color: var(--text); }
 
+.tv-hamburger { display: none; }
+
+.mobile-menu-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mobile-menu {
+  width: 280px; max-width: 85vw;
+  background: var(--bg);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.3);
+  overflow-y: auto;
+}
+
+.mobile-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.mobile-menu-search {
+  margin-bottom: 20px;
+}
+
+.mobile-menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 20px;
+}
+
+.mobile-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.mobile-menu-link:hover,
+.mobile-menu-link.active {
+  background: var(--bg-surface);
+  color: var(--text);
+}
+
+.mobile-menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.mobile-menu-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: var(--radius);
+  text-align: left;
+  transition: var(--transition);
+}
+
+.mobile-menu-action:hover { background: var(--bg-surface); color: var(--text); }
+.mobile-menu-action:disabled { opacity: 0.4; }
+
+.mobile-menu-user {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
 @media (max-width: 768px) {
+  .tv-hamburger { display: flex; }
+  .tv-hide-mobile { display: none !important; }
   .photo-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;

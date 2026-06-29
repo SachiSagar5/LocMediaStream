@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   FiFilm, FiImage, FiLogOut, FiSearch, FiStar,
-  FiRefreshCw, FiSettings, FiSun, FiMoon, FiSmartphone, FiX
+  FiRefreshCw, FiSettings, FiSun, FiMoon, FiSmartphone, FiX, FiMenu
 } from 'react-icons/fi';
 import { QRCodeCanvas } from 'qrcode.react';
 import SettingsModal from './SettingsModal';
@@ -18,6 +18,7 @@ export default function Navbar() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [showQR, setShowQR] = useState(false);
   const [serverURL, setServerURL] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const refreshServerURL = () => {
     fetch('/api/server/info')
@@ -57,7 +58,10 @@ export default function Navbar() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (search.trim()) navigate(`/?search=${encodeURIComponent(search.trim())}`);
+    if (search.trim()) {
+      navigate(`/?search=${encodeURIComponent(search.trim())}`);
+      setMenuOpen(false);
+    }
   };
 
   const handleRescan = async () => {
@@ -73,11 +77,13 @@ export default function Navbar() {
     }
   };
 
+  const tabClick = () => setMenuOpen(false);
+
   return (
     <>
       <nav className="tv-nav">
         <div className="tv-nav-left">
-          <Link to="/" className="tv-nav-brand">
+          <Link to="/" className="tv-nav-brand" onClick={tabClick}>
             <span className="tv-nav-logo">&#9654;</span>
             <span>LocMedia</span>
           </Link>
@@ -95,24 +101,27 @@ export default function Navbar() {
           </div>
         </div>
         <div className="tv-nav-right">
+          <button className="tv-nav-btn tv-hamburger" onClick={() => setMenuOpen(true)} title="Menu">
+            <FiMenu size={20} />
+          </button>
           <form className="tv-search" onSubmit={handleSearch}>
             <FiSearch className="tv-search-icon" />
             <input type="text" placeholder="Search" value={search}
               onChange={(e) => setSearch(e.target.value)} />
           </form>
-          <button className="tv-nav-btn" onClick={() => setShowQR(true)} title="QR Code">
-            <FiSmartphone size={18} />
-          </button>
-          <button className="tv-nav-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}>
+          <button className="tv-nav-btn tv-hide-mobile" onClick={toggleTheme} title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}>
             {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
           </button>
-          <button className="tv-nav-btn" onClick={handleRescan} disabled={scanning} title="Rescan">
+          <button className="tv-nav-btn tv-hide-mobile" onClick={() => setShowQR(true)} title="QR Code">
+            <FiSmartphone size={18} />
+          </button>
+          <button className="tv-nav-btn tv-hide-mobile" onClick={handleRescan} disabled={scanning} title="Rescan">
             <FiRefreshCw className={scanning ? 'spin' : ''} size={18} />
           </button>
-          <button className="tv-nav-btn" onClick={() => setShowSettings(true)} title="Settings">
+          <button className="tv-nav-btn tv-hide-mobile" onClick={() => setShowSettings(true)} title="Settings">
             <FiSettings size={18} />
           </button>
-          <div className="tv-nav-user">
+          <div className="tv-nav-user tv-hide-mobile">
             <span>{user?.username}</span>
             <button className="tv-nav-btn" onClick={logout} title="Logout">
               <FiLogOut size={16} />
@@ -120,6 +129,62 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
+      {/* Mobile menu overlay */}
+      {menuOpen && (
+        <div className="mobile-menu-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="mobile-menu" onClick={e => e.stopPropagation()}>
+            <div className="mobile-menu-header">
+              <Link to="/" className="tv-nav-brand" onClick={tabClick}>
+                <span className="tv-nav-logo">&#9654;</span>
+                <span>LocMedia</span>
+              </Link>
+              <button className="btn-icon" onClick={() => setMenuOpen(false)}><FiX size={20} /></button>
+            </div>
+            <div className="mobile-menu-search">
+              <form className="tv-search" onSubmit={handleSearch} style={{ width: '100%' }}>
+                <FiSearch className="tv-search-icon" />
+                <input type="text" placeholder="Search" value={search}
+                  onChange={(e) => setSearch(e.target.value)} autoFocus />
+              </form>
+            </div>
+            <nav className="mobile-menu-nav">
+              <Link to="/" className={`mobile-menu-link ${currentTab === 'all' ? 'active' : ''}`} onClick={tabClick}>
+                All
+              </Link>
+              <Link to="/?type=video" className={`mobile-menu-link ${currentTab === 'video' ? 'active' : ''}`} onClick={tabClick}>
+                <FiFilm size={16} /> Videos
+              </Link>
+              <Link to="/?type=image" className={`mobile-menu-link ${currentTab === 'image' ? 'active' : ''}`} onClick={tabClick}>
+                <FiImage size={16} /> Photos
+              </Link>
+              <Link to="/?favorites=true" className="mobile-menu-link" onClick={tabClick}>
+                <FiStar size={16} /> Favorites
+              </Link>
+            </nav>
+            <div className="mobile-menu-actions">
+              <button className="mobile-menu-action" onClick={() => { setShowQR(true); setMenuOpen(false); }}>
+                <FiSmartphone size={18} /> QR Code
+              </button>
+              <button className="mobile-menu-action" onClick={toggleTheme}>
+                {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />} {theme === 'dark' ? 'Light' : 'Dark'} Mode
+              </button>
+              <button className="mobile-menu-action" onClick={() => { handleRescan(); setMenuOpen(false); }} disabled={scanning}>
+                <FiRefreshCw className={scanning ? 'spin' : ''} size={18} /> Rescan
+              </button>
+              <button className="mobile-menu-action" onClick={() => { setShowSettings(true); setMenuOpen(false); }}>
+                <FiSettings size={18} /> Settings
+              </button>
+              <button className="mobile-menu-action" onClick={() => { logout(); setMenuOpen(false); }}>
+                <FiLogOut size={18} /> Logout
+              </button>
+            </div>
+            <div className="mobile-menu-user">
+              <span>{user?.username}</span>
+            </div>
+          </div>
+        </div>
+      )}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showQR && (
         <div className="modal-overlay" onClick={() => setShowQR(false)}>

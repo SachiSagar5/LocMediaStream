@@ -20,6 +20,27 @@ router.get('/directories', authenticateToken, (req, res) => {
   res.json({ directories: dirs });
 });
 
+router.get('/browse', authenticateToken, (req, res) => {
+  const reqPath = req.query.path || process.platform === 'win32' ? 'C:\\' : '/';
+  const resolved = path.resolve(reqPath);
+  const home = process.platform === 'win32' ? 'C:\\' : require('os').homedir();
+  const root = process.platform === 'win32' ? 'C:\\' : '/';
+  const allowed = [root, home, ...getMediaDirs()].map(d => path.resolve(d));
+  const isAllowed = allowed.some(a => resolved.startsWith(a));
+  if (!isAllowed && !reqPath.startsWith('/Volumes') && !reqPath.startsWith('/media')) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+  try {
+    const entries = fs.readdirSync(resolved, { withFileTypes: true });
+    const dirs = entries
+      .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+      .map(e => ({ name: e.name, path: path.join(resolved, e.name) }));
+    res.json({ path: resolved, directories: dirs, parent: path.dirname(resolved) });
+  } catch {
+    res.status(500).json({ error: 'Cannot read directory' });
+  }
+});
+
 router.post('/directories', authenticateToken, (req, res) => {
   const { directories } = req.body;
   if (!Array.isArray(directories)) {
