@@ -915,6 +915,18 @@ a:hover { color: var(--accent-hover); }
   outline: none;
 }
 
+.video-player.video-ratio-fill {
+  object-fit: fill;
+}
+
+.video-player.video-ratio-cover {
+  object-fit: cover;
+}
+
+.video-ratio-contain {
+  object-fit: contain;
+}
+
 .video-counter {
   font-size: 0.8rem;
   color: var(--text-secondary);

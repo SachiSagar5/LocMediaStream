@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiArrowLeft, FiHeart, FiDownload, FiFilm, FiShare2, FiSkipBack, FiSkipForward } from 'react-icons/fi';
+import { FiArrowLeft, FiHeart, FiDownload, FiFilm, FiShare2, FiSkipBack, FiSkipForward, FiMaximize2, FiMinimize2, FiRadio } from 'react-icons/fi';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import ShareModal from './ShareModal';
@@ -22,6 +22,9 @@ export default function VideoPlayer() {
   const [error, setError] = useState('');
   const [playError, setPlayError] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState('contain');
+  const [audioTracks, setAudioTracks] = useState([]);
+  const [activeAudioTrack, setActiveAudioTrack] = useState(-1);
   const videoRef = useRef(null);
   const plyrRef = useRef(null);
   const saveInterval = useRef(null);
@@ -104,6 +107,19 @@ export default function VideoPlayer() {
       seekProgress();
     }
 
+    el.addEventListener('loadedmetadata', () => {
+      const tracks = el.audioTracks;
+      if (tracks && tracks.length > 0) {
+        const list = [];
+        for (let i = 0; i < tracks.length; i++) {
+          const t = tracks[i];
+          list.push({ id: i, label: t.label || `Track ${i + 1}`, language: t.language, enabled: t.enabled });
+          if (t.enabled) setActiveAudioTrack(i);
+        }
+        setAudioTracks(list);
+      }
+    }, { once: true });
+
     return () => { player.destroy(); plyrRef.current = null; };
   }, [media]);
 
@@ -126,6 +142,23 @@ export default function VideoPlayer() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [goPrev, goNext]);
+
+  const toggleAspectRatio = () => {
+    setAspectRatio(prev => {
+      const modes = ['contain', 'fill', 'cover'];
+      return modes[(modes.indexOf(prev) + 1) % modes.length];
+    });
+  };
+
+  const switchAudioTrack = () => {
+    const el = videoRef.current;
+    if (!el || !el.audioTracks || el.audioTracks.length < 2) return;
+    const next = (activeAudioTrack + 1) % el.audioTracks.length;
+    for (let i = 0; i < el.audioTracks.length; i++) {
+      el.audioTracks[i].enabled = i === next;
+    }
+    setActiveAudioTrack(next);
+  };
 
   const handleVideoError = () => {
     setError('Video playback error');
@@ -161,6 +194,14 @@ export default function VideoPlayer() {
         <button className="btn-icon" onClick={async () => {
           try { await api.post(`/media/favorites/${id}`); } catch { }
         }} title="Favorite"><FiHeart size={18} /></button>
+        <button className="btn-icon" onClick={toggleAspectRatio} title={`Aspect ratio: ${aspectRatio}`}>
+          {aspectRatio === 'contain' ? <FiMinimize2 size={18} /> : <FiMaximize2 size={18} />}
+        </button>
+        {audioTracks.length > 1 && (
+          <button className="btn-icon" onClick={switchAudioTrack} title={`Audio: ${audioTracks[activeAudioTrack]?.label || 'Track'} (click to switch)`}>
+            <FiRadio size={18} />
+          </button>
+        )}
         <button className="btn-icon" onClick={() => setShowShare(true)} title="Share">
           <FiShare2 size={18} />
         </button>
@@ -181,7 +222,7 @@ export default function VideoPlayer() {
             <div className="video-blur-bg-inner" style={{ backgroundImage: `url(${poster})` }} />
             <div className="video-player-inner plyr-container">
               <video ref={videoRef}
-                className="video-player"
+                className={`video-player video-ratio-${aspectRatio}`}
                 poster={poster}
                 onError={handleVideoError}
                 playsInline
