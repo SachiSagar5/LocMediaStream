@@ -29,6 +29,7 @@ export default function VideoPlayer() {
   const [showShare, setShowShare] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
@@ -59,6 +60,17 @@ export default function VideoPlayer() {
     if (!video) return;
     video.muted = !video.muted;
     setMuted(video.muted);
+    if (!video.muted) video.volume = volume || 0.5;
+  }, [volume]);
+
+  const handleVolumeChange = useCallback((e) => {
+    const v = parseFloat(e.target.value);
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = v;
+    video.muted = v === 0;
+    setVolume(v);
+    setMuted(v === 0);
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -233,6 +245,10 @@ export default function VideoPlayer() {
                     <button className="video-ctrl-btn" onClick={toggleMute} title={muted ? 'Unmute' : 'Mute'}>
                       {muted ? <FiVolumeX size={18} /> : <FiVolume2 size={18} />}
                     </button>
+                    <div className="video-volume-wrap">
+                      <input type="range" className="video-volume-slider" min="0" max="1" step="0.05"
+                        value={muted ? 0 : volume} onChange={handleVolumeChange} />
+                    </div>
                     <button className="video-ctrl-btn" onClick={goPrev} disabled={currentIndex <= 0} title="Previous">
                       <FiSkipBack size={16} />
                     </button>
