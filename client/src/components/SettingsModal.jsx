@@ -46,11 +46,11 @@ export default function SettingsModal({ onClose }) {
     setBrowseLoading(true);
     try {
       const res = await api.get(`/media/browse?path=${encodeURIComponent(dirPath)}`);
-      setBrowsePath(res.data.path);
-      setBrowseDirs(res.data.directories);
-      setBrowseParent(res.data.parent);
-    } catch {
-      alert('Cannot browse this directory');
+      setBrowsePath(res.data.path || '');
+      setBrowseDirs(Array.isArray(res.data.directories) ? res.data.directories : []);
+      setBrowseParent(res.data.parent || '');
+    } catch (err) {
+      alert('Cannot browse this directory: ' + (err.response?.data?.error || err.message));
     } finally {
       setBrowseLoading(false);
     }
@@ -197,7 +197,7 @@ export default function SettingsModal({ onClose }) {
                   )}
                   {browseLoading ? (
                     <div className="dir-browser-loading">Loading...</div>
-                  ) : browseDirs.length === 0 ? (
+                  ) : !browseDirs || browseDirs.length === 0 ? (
                     <div className="dir-browser-empty">No subdirectories</div>
                   ) : (
                     browseDirs.map(d => (
